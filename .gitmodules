@@ -1,4 +1,0 @@
-[submodule "lib/mqtt_rpc"]
-	path = lib/mqtt_rpc
-	url = https://github.com/candale/esp8266_mqtt_rpc
-	branch = sdk
