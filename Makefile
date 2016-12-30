@@ -64,18 +64,24 @@ TARGET 		= image.elf
 
 THIRD_PARTY_MODULES_DIR = lib
 
+# Sources to be compiled
 SRCS =  user/user_main.c \
 		modules/wifi.c \
 
+# Project includes
 INCL = $(SDK)/include modules/include include
 
 
 # THIRD PARTY CODE
-THIRD_PARTY_MODULES =
-SRCS 				+= $(foreach sdir,$(THIRD_PARTY_MODULES),$(wildcard $(sdir)/*.c))
+# Paths to third party libs (normally in lib/) separated by space.
+THIRD_PARTY_MODULES  =
+SRCS 				 += $(foreach sdir,$(THIRD_PARTY_MODULES),$(wildcard $(sdir)/*.c))
+THIRD_PARTY_INCLUDES =
 
+# Try to get include directory from third party libs
 MODULE_INCDIR 	:= $(addsuffix /include,$(THIRD_PARTY_MODULES))
 INCL 			+= $(MODULE_INCDIR)
+INCL 			+= $(THIRD_PARTY_INCLUDES)
 
 
 # COMPILE FLAGS
