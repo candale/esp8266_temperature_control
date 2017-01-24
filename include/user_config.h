@@ -5,8 +5,8 @@
 // #define MQTT_DEBUG_ON
 
 // WIFI CONFIGURATION
-#define WIFI_SSID "Can't Touch This"
-#define WIFI_PASS "getyourownwifi"
+#define WIFI_SSID "TP-LINK_9F4C"
+#define WIFI_PASS "52027253"
 
 // MQTT CONFIGURATION
 #define MQTT_SSL_ENABLE
