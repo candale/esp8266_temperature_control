@@ -74,7 +74,7 @@ INCL = $(SDK)/include modules/include include
 
 # THIRD PARTY CODE
 # Paths to third party libs (normally in lib/) separated by space.
-THIRD_PARTY_MODULES  =
+THIRD_PARTY_MODULES  = lib/esp_mqtt/mqtt lib/mqtt_rpc/mqtt_rpc lib/dht22
 SRCS 				 += $(foreach sdir,$(THIRD_PARTY_MODULES),$(wildcard $(sdir)/*.c))
 THIRD_PARTY_INCLUDES =
 

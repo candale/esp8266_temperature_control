@@ -5,14 +5,33 @@
 // #define MQTT_DEBUG_ON
 
 // WIFI CONFIGURATION
-#define WIFI_SSID "ssid"
-#define WIFI_PASS "pass"
+#define WIFI_SSID "Can't Touch This"
+#define WIFI_PASS "getyourownwifi"
+
+// MQTT CONFIGURATION
+#define MQTT_SSL_ENABLE
+#define PROTOCOL_NAMEv31
+#define MQTT_BUF_SIZE   1024
+
+#define MQTT_HOST       "212.47.229.77"
+#define MQTT_PORT       1883
+#define MQTT_USER       "dht22_test"
+#define MQTT_PASS       "dhat22testnaremere14"
+#define MQTT_CLIENT_ID  "dht22_test"
+
+#define MQTT_CLEAN_SESSION  0
+#define MQTT_KEEPALIVE      1300
+
+#define MQTT_RECONNECT_TIMEOUT  5 /*second*/
+
+#define DEFAULT_SECURITY  0
+#define QUEUE_BUFFER_SIZE 2048
 
 // DEBUG OPTIONS
 #if defined(DEBUG_ON)
 #define INFO( format, ... ) os_printf( format, ## __VA_ARGS__ )
 #else
 #define INFO( format, ... )
-#endif
 
+#endif
 #endif

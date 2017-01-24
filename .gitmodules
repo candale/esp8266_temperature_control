@@ -1,0 +1,10 @@
+[submodule "lib/mqtt_rpc"]
+	path = lib/mqtt_rpc
+	url = https://github.com/candale/esp8266_mqtt_rpc
+	branch = sdk
+[submodule "lib/esp_mqtt"]
+	path = lib/esp_mqtt
+	url = https://github.com/tuanpmt/esp_mqtt
+[submodule "lib/dht22"]
+	path = lib/dht22
+	url = https://github.com/iotpipe/esp8266-dht22
