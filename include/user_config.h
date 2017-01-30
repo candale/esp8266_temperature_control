@@ -6,7 +6,7 @@
 
 // WIFI CONFIGURATION
 #define WIFI_SSID "TP-LINK_9F4C"
-#define WIFI_PASS "52027253"
+#define WIFI_PASS "pass"
 
 // MQTT CONFIGURATION
 #define MQTT_SSL_ENABLE
@@ -15,8 +15,8 @@
 
 #define MQTT_HOST       "212.47.229.77"
 #define MQTT_PORT       1883
-#define MQTT_USER       "dht22_test"
-#define MQTT_PASS       "dhat22testnaremere14"
+#define MQTT_USER       "user"
+#define MQTT_PASS       "pass"
 #define MQTT_CLIENT_ID  "dht22_test"
 
 #define MQTT_CLEAN_SESSION  0
