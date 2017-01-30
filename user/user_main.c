@@ -98,6 +98,7 @@ publish_data(void* arg) {
         } else {
             os_strcpy(state_str, HEATER_OFF_MSG);
         }
+
         MQTTRPC_Publish(&rpc_conf, "state", state_str, os_strlen(state_str), 1, 0);
         INFO("Turned heater -- %s --\n", state_str);
     }
@@ -112,6 +113,7 @@ publish_data(void* arg) {
 
     os_free(temp_str);
     os_free(hum_str);
+    os_free(state_str);
 }
 
 

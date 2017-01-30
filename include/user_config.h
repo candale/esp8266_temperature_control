@@ -20,7 +20,7 @@
 #define MQTT_CLIENT_ID  "dht22_test"
 
 #define MQTT_CLEAN_SESSION  0
-#define MQTT_KEEPALIVE      1300
+#define MQTT_KEEPALIVE      60
 
 #define MQTT_RECONNECT_TIMEOUT  5 /*second*/
 
