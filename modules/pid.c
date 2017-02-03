@@ -12,6 +12,7 @@ void PID_Init(
     conf->setpoint = setpoint;
 
     conf->integral_err = 0;
+    conf->windup_guard = DEFAULT_WINDUP_GUARD;
 
     /**
     Usually you would compute the derivative of the temperature with this formula:
@@ -37,15 +38,28 @@ void PID_Init(
 }
 
 
+void PID_SetWindupGuard(PID_Conf* conf, double windup_guard) {
+    conf->windup_guard = windup_guard;
+}
+
+
 double PID_Compute(PID_Conf* conf, double input) {
     double error = conf->setpoint - input;
 
     conf->integral_err += error;
+
+    // Windup guard
+    if(conf->integral_err > conf->windup_guard) {
+        conf->integral_err = conf->windup_guard;
+    } else if (conf->integral_err < -1 * conf->windup_guard) {
+        conf->integral_err = -1 * conf->windup_guard;
+    }
+
     double derivative = conf->k_derivative * error;
 
     return (
         conf->k_proportioanl * error +
-        conf->k_integral * error +
+        conf->k_integral * conf->integral_err +
         derivative
     );
 }

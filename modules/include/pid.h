@@ -1,6 +1,9 @@
 #include "os_type.h"
 
 
+#define DEFAULT_WINDUP_GUARD 200
+
+
 typedef struct {
     double k_proportioanl;
     double k_integral;
@@ -8,6 +11,8 @@ typedef struct {
 
     double integral_err;
     double last_input;
+
+    double windup_guard;
 
     uint32_t sample_time;
     double setpoint;

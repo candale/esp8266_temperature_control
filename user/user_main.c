@@ -47,6 +47,10 @@ void ICACHE_FLASH_ATTR change_ki(
     MQTTRPC_Conf* rpc_conf, char* data, char* args[], uint8_t arg_count);
 void ICACHE_FLASH_ATTR change_kd(
     MQTTRPC_Conf* rpc_conf, char* data, char* args[], uint8_t arg_count);
+void ICACHE_FLASH_ATTR change_on_threshold(
+    MQTTRPC_Conf* rpc_conf, char* data, char* args[], uint8_t arg_count);
+void ICACHE_FLASH_ATTR change_windup_guard(
+    MQTTRPC_Conf* rpc_conf, char* data, char* args[], uint8_t arg_count);
 
 void ICACHE_FLASH_ATTR on_mqtt_connected(uint32_t* arg);
 void ICACHE_FLASH_ATTR publish_data(void* arg);
@@ -57,6 +61,8 @@ const MQTTRPC_Topic_Map topics_map[] = {
         { .topic = "change-kp", .handler = (MQTTRPC_Handler)change_kp },
         { .topic = "change-ki", .handler = (MQTTRPC_Handler)change_ki },
         { .topic = "change-kd", .handler = (MQTTRPC_Handler)change_kd },
+        { .topic = "change-on-threshold", .handler = (MQTTRPC_Handler)change_on_threshold },
+        { .topic = "change-windup-guard", .handler = (MQTTRPC_Handler)change_windup_guard },
         { .topic = 0 }
     };
 MQTTRPC_Conf rpc_conf = MQTTRPC_INIT_CONF(.handlers = topics_map);
@@ -112,6 +118,17 @@ change_kd(MQTTRPC_Conf* rpc_conf, char* data, char* args[], uint8_t arg_count) {
 
 
 void ICACHE_FLASH_ATTR
+change_windup_guard(MQTTRPC_Conf* rpc_conf, char* data, char* args[], uint8_t arg_count) {
+    INFO("Got windup guard data: %s\n", data);
+
+    double windup_guard = atof(data);
+    PID_SetWindupGuard(&pid_config, windup_guard);
+
+    INFO("Changed windup guard to %d.%d\n", (int)windup_guard, ABS((int)((windup_guard - ((int)windup_guard)) * 1000)));
+}
+
+
+void ICACHE_FLASH_ATTR
 change_on_threshold(MQTTRPC_Conf* rpc_conf, char* data, char* args[], uint8_t arg_count) {
     INFO("Got on threshold data: %s\n", data);
 
@@ -119,7 +136,6 @@ change_on_threshold(MQTTRPC_Conf* rpc_conf, char* data, char* args[], uint8_t ar
 
     INFO("Changed on threshold to %d.%d\n", (int)on_threshold, ABS((int)((on_threshold - ((int)on_threshold)) * 1000)));
 }
-
 
 
 void ICACHE_FLASH_ATTR
@@ -179,7 +195,7 @@ void ICACHE_FLASH_ATTR
 on_mqtt_connected(uint32_t* arg) {
     os_timer_disarm(&publish_timer);
     os_timer_setfn(&publish_timer, (os_timer_func_t *)publish_data, (void *)0);
-    os_timer_arm(&publish_timer, TEMP_SAMPLE_TIME, 1);
+    os_timer_arm(&publish_timer, TEMP_SAMPLE_TIME * 1000, 1);
 }
 
 void ICACHE_FLASH_ATTR
@@ -197,6 +213,7 @@ init_systems(uint8_t status) {
     // Set pin 4 (D2 on d1 mini) as output
     PIN_FUNC_SELECT(HEATER_GPIO_MUX_4, HEATER_GPIO_FUNC_4);
 
+    INFO("Setting up MQTT client\n");
     MQTT_InitConnection(&mqtt_client, MQTT_HOST, MQTT_PORT, DEFAULT_SECURITY);
     if (!MQTT_InitClient(&mqtt_client, MQTT_CLIENT_ID, MQTT_USER, MQTT_PASS, MQTT_KEEPALIVE, MQTT_CLEAN_SESSION) )
     {
@@ -205,9 +222,13 @@ init_systems(uint8_t status) {
     }
 
     // Initialize PID controller
-    PID_Init(&pid_config, INIT_KP, INIT_KP, INIT_KD, TEMP_SAMPLE_TIME, INIT_SETPOINT);
+    INFO("Init PID controller\n");
+    PID_Init(&pid_config, INIT_KP, INIT_KI, INIT_KD, TEMP_SAMPLE_TIME, INIT_SETPOINT);
 
-    MQTTRPC_OnConnected(on_mqtt_connected);
+    INFO("Set on MQTTRpc connected callback\n");
+    MQTTRPC_OnConnected(&rpc_conf, on_mqtt_connected);
+
+    INFO("Initializing MQTTRpc\n");
     MQTTRpc_Init(&rpc_conf, &mqtt_client);
 }
 
