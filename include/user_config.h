@@ -6,18 +6,18 @@
 
 // WIFI CONFIGURATION
 #define WIFI_SSID "Can't Touch This"
-#define WIFI_PASS "getyourownwifi"
+#define WIFI_PASS "pass"
 
 // MQTT CONFIGURATION
 #define MQTT_SSL_ENABLE
 #define PROTOCOL_NAMEv31
 #define MQTT_BUF_SIZE   1024
 
-#define MQTT_HOST       "212.47.229.77"
+#define MQTT_HOST       "host"
 #define MQTT_PORT       1883
-#define MQTT_USER       "dht22_test"
-#define MQTT_PASS       "dhat22testnaremere14"
-#define MQTT_CLIENT_ID  "dht22_test"
+#define MQTT_USER       "temp_outside"
+#define MQTT_PASS       "pass"
+#define MQTT_CLIENT_ID  "temp_outside"
 
 #define MQTT_CLEAN_SESSION  0
 #define MQTT_KEEPALIVE      1300

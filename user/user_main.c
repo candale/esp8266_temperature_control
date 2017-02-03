@@ -31,7 +31,7 @@ go_to_sleep(void *arg) {
     os_timer_disarm(&sleep_timer);
     // 0 means Radio calibration after deep-sleep wake up depends on init data byte 108.
     system_deep_sleep_set_option(0);
-    system_deep_sleep(1800 * 1000 * 1000);
+    system_deep_sleep(1200 * 1000 * 1000);
 }
 
 void ICACHE_FLASH_ATTR
@@ -48,7 +48,7 @@ publish_data(uint32_t *arg) {
     os_sprintf(temp_str, "%d.%d", (int)temperature, ABS((int)((temperature - ((int)temperature)) * 1000)));
     os_sprintf(hum_str, "%d.%d", (int)humidity, (int)((humidity - ((int)humidity)) * 1000));
 
-    INFO("Publishing TEMP: %f  HUM: %f\n", temperature, humidity);
+    INFO("Publishing TEMP: %s  HUM: %s\n", temp_str, hum_str);
 
     MQTTRPC_Publish(rpc_conf, "temperature", temp_str, os_strlen(temp_str), 2, 1);
     MQTTRPC_Publish(rpc_conf, "humidity", hum_str, os_strlen(hum_str), 2, 1);
