@@ -67,7 +67,8 @@ THIRD_PARTY_MODULES_DIR = lib
 # Sources to be compiled
 SRCS =  user/user_main.c \
 		modules/wifi.c \
-		modules/utils.c
+		modules/utils.c \
+		modules/pid.c
 
 # Project includes
 INCL = $(SDK)/include modules/include include
