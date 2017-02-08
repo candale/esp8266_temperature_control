@@ -45,8 +45,10 @@ void PID_SetWindupGuard(PID_Conf* conf, double windup_guard) {
 
 double PID_Compute(PID_Conf* conf, double input) {
     double error = conf->setpoint - input;
+    double input_derivative = input - conf->last_input;
 
     conf->integral_err += error;
+    conf->last_input = input;
 
     // Windup guard
     if(conf->integral_err > conf->windup_guard) {
@@ -55,11 +57,12 @@ double PID_Compute(PID_Conf* conf, double input) {
         conf->integral_err = -1 * conf->windup_guard;
     }
 
-    double derivative = conf->k_derivative * error;
+    // As explained here http://bit.ly/2lrLXmL
+    double derivative = conf->k_derivative * input_derivative;
 
     return (
         conf->k_proportioanl * error +
-        conf->k_integral * conf->integral_err +
+        conf->k_integral * conf->integral_err -
         derivative
     );
 }

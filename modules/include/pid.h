@@ -1,3 +1,9 @@
+/**
+This is largely based on the work of br3ttb (github) for Arduino PID
+https://github.com/br3ttb/Arduino-PID-Library/
+**/
+
+
 #include "os_type.h"
 
 
