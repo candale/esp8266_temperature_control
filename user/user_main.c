@@ -13,15 +13,21 @@
 #include "pid.h"
 
 #define ABS(x) (x < 0 ? x * -1 : x)
+#define FRACTIONAL(x) (ABS((int)((x - ((int)x)) * 1000)))
+#define WHOLE(x) ((int)x)
+// Float os_sprintf
+// #define ftoa(buff, val) (os_sprintf(buff, "%d.%d", WHOLE(val), FRACTIONAL(val)))
 
 #define INIT_SETPOINT    4
 #define INIT_KP          2
-#define INIT_KI          0.03
+#define INIT_KI          0.005
 #define INIT_KD          1.2
 // WHen the output gets above this value, we turn on the heating
 #define ON_TRESHOLD      1.3
 // Temperature sample time in seconds
 #define TEMP_SAMPLE_TIME 10
+// PID config publish time in seconds
+#define PID_CONFIG_PUBLISH_TIME 600
 
 #define HEATER_ON_MSG "on"
 #define HEATER_OFF_MSG "off"
@@ -33,9 +39,10 @@
 
 MQTT_Client mqtt_client;
 PID_Conf pid_config;
-LOCAL os_timer_t publish_timer;
+LOCAL os_timer_t sample_timer;
+LOCAL os_timer_t pid_config_pub_timer;
 
-uint8_t header_state = 0;
+uint8_t heater_state = 0;
 double on_threshold = ON_TRESHOLD;
 
 
@@ -81,7 +88,7 @@ change_setpoint(MQTTRPC_Conf* rpc_conf, char* data, char* args[], uint8_t arg_co
     double setpoint = atof(data);
     PID_Setpoint(&pid_config, setpoint);
 
-    INFO("Changed setpoint to %d.%d\n", (int)setpoint, ABS((int)((setpoint - ((int)setpoint)) * 1000)));
+    INFO("Changed setpoint to %d.%d\n", WHOLE(setpoint), FRACTIONAL(setpoint));
 }
 
 
@@ -92,7 +99,7 @@ change_kp(MQTTRPC_Conf* rpc_conf, char* data, char* args[], uint8_t arg_count) {
     double kp = atof(data);
     PID_SetKProportinal(&pid_config, kp);
 
-    INFO("Changed PID KP to %d.%d\n", (int)kp, ABS((int)((kp - ((int)kp)) * 1000)));
+    INFO("Changed PID KP to %d.%d\n", WHOLE(kp), FRACTIONAL(kp));
 }
 
 
@@ -103,7 +110,7 @@ change_ki(MQTTRPC_Conf* rpc_conf, char* data, char* args[], uint8_t arg_count) {
     double ki = atof(data);
     PID_SetKIntegral(&pid_config, ki);
 
-    INFO("Changed PID KI to %d.%d\n", (int)ki, ABS((int)((ki - ((int)ki)) * 1000)));
+    INFO("Changed PID KI to %d.%d\n", WHOLE(ki), FRACTIONAL(ki));
 }
 
 void ICACHE_FLASH_ATTR
@@ -113,7 +120,7 @@ change_kd(MQTTRPC_Conf* rpc_conf, char* data, char* args[], uint8_t arg_count) {
     double kd = atof(data);
     PID_SetKDerivative(&pid_config, kd);
 
-    INFO("Changed PID KD to %d.%d\n", (int)kd, ABS((int)((kd - ((int)kd)) * 1000)));
+    INFO("Changed PID KD to %d.%d\n", WHOLE(kd), FRACTIONAL(kd));
 }
 
 
@@ -124,7 +131,7 @@ change_windup_guard(MQTTRPC_Conf* rpc_conf, char* data, char* args[], uint8_t ar
     double windup_guard = atof(data);
     PID_SetWindupGuard(&pid_config, windup_guard);
 
-    INFO("Changed windup guard to %d.%d\n", (int)windup_guard, ABS((int)((windup_guard - ((int)windup_guard)) * 1000)));
+    INFO("Changed windup guard to %d.%d\n", WHOLE(windup_guard), FRACTIONAL(windup_guard));
 }
 
 
@@ -134,14 +141,16 @@ change_on_threshold(MQTTRPC_Conf* rpc_conf, char* data, char* args[], uint8_t ar
 
     on_threshold = atof(data);
 
-    INFO("Changed on threshold to %d.%d\n", (int)on_threshold, ABS((int)((on_threshold - ((int)on_threshold)) * 1000)));
+    INFO("Changed on threshold to %d.%d\n", WHOLE(on_threshold), FRACTIONAL(on_threshold));
 }
 
 
 void ICACHE_FLASH_ATTR
 publish_data(void* arg) {
     INFO("Reading temperature and humidity ...\n");
+
     uint8_t state_changed = 0;
+    char* buff = (char*)os_zalloc(12);
     float temperature = readTemperature(false);
     float humidity = readHumidity();
 
@@ -149,53 +158,76 @@ publish_data(void* arg) {
     double pid_output = PID_Compute(&pid_config, temperature);
     uint8_t should_be_on = pid_output >= on_threshold;
 
-    if(should_be_on != header_state) {
+    if(should_be_on != heater_state) {
         set_heater(should_be_on);
-        header_state = should_be_on;
+        heater_state = should_be_on;
         state_changed = 1;
     }
 
-    INFO("Publishing ...\n", temperature, humidity);
-
-    // Get string representations of temperature, humidity and state
-    char* temp_str = (char*)os_zalloc(12);
-    char* hum_str = (char*)os_zalloc(12);
-    char* pid_output_str = (char*)os_zalloc(12);
-    char* state_str = (char*)os_zalloc(5);
+    INFO("Publishing ...\n");
 
     if(state_changed) {
-        if(header_state) {
-            os_strcat(state_str, HEATER_ON_MSG);
+        if(heater_state) {
+            MQTTRPC_Publish(&rpc_conf, "state", HEATER_ON_MSG, os_strlen(HEATER_ON_MSG), 1, 0);
+            INFO("Turned heater -- %s --\n", HEATER_ON_MSG);
         } else {
-            os_strcat(state_str, HEATER_OFF_MSG);
+            MQTTRPC_Publish(&rpc_conf, "state", HEATER_OFF_MSG, os_strlen(HEATER_OFF_MSG), 1, 0);
+            INFO("Turned heater -- %s --\n", HEATER_OFF_MSG);
         }
-
-        MQTTRPC_Publish(&rpc_conf, "state", state_str, os_strlen(state_str), 1, 0);
-        INFO("Turned heater -- %s --\n", state_str);
     }
 
-    os_sprintf(temp_str, "%d.%d", (int)temperature, ABS((int)((temperature - ((int)temperature)) * 1000)));
-    os_sprintf(hum_str, "%d.%d", (int)humidity, (int)((humidity - ((int)humidity)) * 1000));
-    os_sprintf(pid_output_str, "%d.%d", (int)pid_output, (int)((pid_output - ((int)pid_output)) * 1000));
+    ftoa(buff, temperature);
+    MQTTRPC_Publish(&rpc_conf, "temperature", buff, os_strlen(buff), 1, 1);
 
-    INFO("Temperature: %s || Humidity: %s\n", temp_str, hum_str);
+    ftoa(buff, humidity);
+    MQTTRPC_Publish(&rpc_conf, "humidity", buff, os_strlen(buff), 1, 1);
 
-    MQTTRPC_Publish(&rpc_conf, "temperature", temp_str, os_strlen(temp_str), 1, 1);
-    MQTTRPC_Publish(&rpc_conf, "humidity", hum_str, os_strlen(hum_str), 1, 1);
-    MQTTRPC_Publish(&rpc_conf, "pid-output", pid_output_str, os_strlen(pid_output_str), 1, 1);
+    ftoa(buff, pid_output);
+    MQTTRPC_Publish(&rpc_conf, "pid-output", buff, os_strlen(buff), 1, 1);
 
-    os_free(temp_str);
-    os_free(hum_str);
-    os_free(state_str);
-    os_free(pid_output_str);
+    os_free(buff);
+}
+
+
+void ICACHE_FLASH_ATTR
+publish_pid_config(void* arg) {
+    char* buff = (char*)os_zalloc(20);
+
+    ftoa(buff, pid_config.k_proportioanl);
+    MQTTRPC_Publish(&rpc_conf, "report-kp", buff, os_strlen(buff), 1, 1);
+
+    ftoa(buff, pid_config.k_integral);
+    MQTTRPC_Publish(&rpc_conf, "report-ki", buff, os_strlen(buff), 1, 1);
+
+    ftoa(buff, pid_config.k_derivative);
+    MQTTRPC_Publish(&rpc_conf, "report-kd", buff, os_strlen(buff), 1, 1);
+
+    ftoa(buff, pid_config.setpoint);
+    MQTTRPC_Publish(&rpc_conf, "report-setpoint", buff, os_strlen(buff), 1, 1);
+
+    if(heater_state) {
+        MQTTRPC_Publish(&rpc_conf, "state", HEATER_ON_MSG, os_strlen(HEATER_ON_MSG), 1, 0);
+        INFO("Turned heater -- %s --\n", HEATER_ON_MSG);
+    } else {
+        MQTTRPC_Publish(&rpc_conf, "state", HEATER_OFF_MSG, os_strlen(HEATER_OFF_MSG), 1, 0);
+        INFO("Turned heater -- %s --\n", HEATER_OFF_MSG);
+    }
+
+    os_free(buff);
 }
 
 
 void ICACHE_FLASH_ATTR
 on_mqtt_connected(uint32_t* arg) {
-    os_timer_disarm(&publish_timer);
-    os_timer_setfn(&publish_timer, (os_timer_func_t *)publish_data, (void *)0);
-    os_timer_arm(&publish_timer, TEMP_SAMPLE_TIME * 1000, 1);
+    os_timer_disarm(&sample_timer);
+    os_timer_setfn(&sample_timer, (os_timer_func_t *)publish_data, (void *)0);
+    os_timer_arm(&sample_timer, TEMP_SAMPLE_TIME * 1000, 1);
+
+    publish_pid_config(0);
+
+    os_timer_disarm(&pid_config_pub_timer);
+    os_timer_setfn(&pid_config_pub_timer, (os_timer_func_t *)publish_data, (void *)0);
+    os_timer_arm(&pid_config_pub_timer, PID_CONFIG_PUBLISH_TIME * 1000, 2);
 }
 
 void ICACHE_FLASH_ATTR
