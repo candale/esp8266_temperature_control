@@ -12,6 +12,7 @@ void PID_Init(
     conf->setpoint = setpoint;
 
     conf->integral_err = 0;
+    conf->last_input = setpoint;
     conf->windup_guard = DEFAULT_WINDUP_GUARD;
 
     /**
