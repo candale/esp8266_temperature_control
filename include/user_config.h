@@ -6,18 +6,19 @@
 
 // WIFI CONFIGURATION
 #define WIFI_SSID "TP-LINK_9F4C"
-#define WIFI_PASS "pass"
+#define WIFI_PASS "52027253"
 
 // MQTT CONFIGURATION
 #define MQTT_SSL_ENABLE
 #define PROTOCOL_NAMEv31
 #define MQTT_BUF_SIZE   1024
 
+// Works better with IP than with host
 #define MQTT_HOST       "212.47.229.77"
 #define MQTT_PORT       1883
-#define MQTT_USER       "user"
+#define MQTT_USER       "bee_thermostat"
 #define MQTT_PASS       "pass"
-#define MQTT_CLIENT_ID  "dht22_test"
+#define MQTT_CLIENT_ID  "bee_thermostat"
 
 #define MQTT_CLEAN_SESSION  0
 #define MQTT_KEEPALIVE      60
