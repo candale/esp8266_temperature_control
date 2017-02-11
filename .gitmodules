@@ -5,9 +5,6 @@
 [submodule "lib/esp_mqtt"]
 	path = lib/esp_mqtt
 	url = https://github.com/tuanpmt/esp_mqtt
-[submodule "lib/dht22"]
-	path = lib/dht22
-	url = https://github.com/iotpipe/esp8266-dht22
 [submodule "lib/ds18b20"]
 	path = lib/ds18b20
 	url = https://github.com/candale/esp826_ds18b20

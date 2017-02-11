@@ -8,7 +8,6 @@
 #include "mem.h"
 #include "mqtt_rpc.h"
 #include "user_interface.h"
-#include "dht22.h"
 
 
 #define ABS(x) (x < 0 ? x * -1 : x)
@@ -39,8 +38,6 @@ publish_data(uint32_t *arg) {
     MQTTRPC_Conf* rpc_conf = (MQTTRPC_Conf*)arg;
 
     INFO("Reading temperature and humidity ...\n");
-    float temperature = readTemperature(false);
-    float humidity = readHumidity();
 
     char* temp_str = (char*)os_zalloc(32);
     char* hum_str = (char*)os_zalloc(32);
@@ -74,12 +71,6 @@ init_mqtt_rpc(uint8_t status) {
     if(status != STATION_GOT_IP) {
         return;
     }
-
-    // Init DHT on PIN 14 -> D5
-    // Not sure what the third argument is, it is called count
-    INFO("Init DHT22\n");
-    DHT_init(14, DHT22, 6);
-    DHT_begin();
 
     INFO("Initialize MQTT client\r\n");
     MQTT_InitConnection(&mqttClient, MQTT_HOST, MQTT_PORT, DEFAULT_SECURITY);
