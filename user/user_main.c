@@ -14,7 +14,7 @@
 
 #define DEEP_SLEEP_OPERATION 1
 #define NORMAL_OPERATION     2
-#define THERMOSTAT_MODE NORMAL_OPERATION
+#define THERMOSTAT_OPERATION_MODE NORMAL_OPERATION
 
 #define ABS(x) (x < 0 ? x * -1 : x)
 
@@ -38,6 +38,7 @@ void ICACHE_FLASH_ATTR print_info()
   system_print_meminfo();
 }
 
+
 void ICACHE_FLASH_ATTR
 go_to_sleep(void *arg) {
     INFO("Going to sleep\n");
@@ -53,7 +54,7 @@ read_and_publish_data() {
 
 
     if(sensors.count >= 1) {
-        INFO("Reading temperature 1...\n");
+        INFO("Reading temperature 1 ...\n");
         float temperature1 = ds18b20_read(&sensors, 0);
         ftoa(temp_str, temperature1);
         INFO("Publishing TEMP 1: %s\n", temp_str);
@@ -81,14 +82,14 @@ read_and_publish_data_fn(void* arg) {
 
 void ICACHE_FLASH_ATTR
 setup_worker(void* arg) {
-    if(THERMOSTAT_MODE == DEEP_SLEEP_OPERATION) {
+    if(THERMOSTAT_OPERATION_MODE == DEEP_SLEEP_OPERATION) {
         read_and_publish_data();
 
         // Give it some time so MQTT can do its thing and then go to sleep
         os_timer_disarm(&sleep_timer);
         os_timer_setfn(&sleep_timer, (os_timer_func_t*)go_to_sleep, (void *)0);
         os_timer_arm(&sleep_timer, 2000, 0);
-    } else if(THERMOSTAT_MODE == NORMAL_OPERATION) {
+    } else if(THERMOSTAT_OPERATION_MODE == NORMAL_OPERATION) {
         os_timer_disarm(&read_and_pub_timer);
         os_timer_setfn(&read_and_pub_timer, (os_timer_func_t*)read_and_publish_data_fn, (void*)0);
         os_timer_arm(&read_and_pub_timer, 3000, 1);
