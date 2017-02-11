@@ -5,7 +5,7 @@
 // #define MQTT_DEBUG_ON
 
 // WIFI CONFIGURATION
-#define WIFI_SSID "Can't Touch This"
+#define WIFI_SSID "Can't Touch This. Ta na na na..."
 #define WIFI_PASS "pass"
 
 // MQTT CONFIGURATION
@@ -13,7 +13,7 @@
 #define PROTOCOL_NAMEv31
 #define MQTT_BUF_SIZE   1024
 
-#define MQTT_HOST       "host"
+#define MQTT_HOST       "212.47.229.77"
 #define MQTT_PORT       1883
 #define MQTT_USER       "temp_outside"
 #define MQTT_PASS       "pass"

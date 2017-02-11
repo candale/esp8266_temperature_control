@@ -8,12 +8,26 @@
 #include "mem.h"
 #include "mqtt_rpc.h"
 #include "user_interface.h"
+#include "ds18b20.h"
+#include "utils.h"
 
+
+#define DEEP_SLEEP_OPERATION 1
+#define NORMAL_OPERATION     2
+#define THERMOSTAT_MODE NORMAL_OPERATION
 
 #define ABS(x) (x < 0 ? x * -1 : x)
 
 MQTT_Client mqttClient;
+DS18B20_Sensors sensors;
 LOCAL os_timer_t sleep_timer;
+LOCAL os_timer_t read_and_pub_timer;;
+
+const MQTTRPC_Topic_Map topics_map[] = {
+        { .topic = 0 }
+    };
+MQTTRPC_Conf rpc_conf = MQTTRPC_INIT_CONF(.handlers = topics_map);
+
 
 void ICACHE_FLASH_ATTR print_info()
 {
@@ -34,42 +48,67 @@ go_to_sleep(void *arg) {
 }
 
 void ICACHE_FLASH_ATTR
-publish_data(uint32_t *arg) {
-    MQTTRPC_Conf* rpc_conf = (MQTTRPC_Conf*)arg;
-
-    INFO("Reading temperature and humidity ...\n");
-
+read_and_publish_data() {
     char* temp_str = (char*)os_zalloc(32);
-    char* hum_str = (char*)os_zalloc(32);
 
-    os_sprintf(temp_str, "%d.%d", (int)temperature, ABS((int)((temperature - ((int)temperature)) * 1000)));
-    os_sprintf(hum_str, "%d.%d", (int)humidity, (int)((humidity - ((int)humidity)) * 1000));
 
-    INFO("Publishing TEMP: %s  HUM: %s\n", temp_str, hum_str);
+    if(sensors.count >= 1) {
+        INFO("Reading temperature 1...\n");
+        float temperature1 = ds18b20_read(&sensors, 0);
+        ftoa(temp_str, temperature1);
+        INFO("Publishing TEMP 1: %s\n", temp_str);
+        MQTTRPC_Publish(&rpc_conf, "temperature", temp_str, os_strlen(temp_str), 2, 1);
+    }
 
-    MQTTRPC_Publish(rpc_conf, "temperature", temp_str, os_strlen(temp_str), 2, 1);
-    MQTTRPC_Publish(rpc_conf, "humidity", hum_str, os_strlen(hum_str), 2, 1);
+
+    if(sensors.count >= 2) {
+        INFO("Reading temperature 2 ...\n");
+        float temperature2 = ds18b20_read(&sensors, 1);
+        ftoa(temp_str, temperature2);
+        INFO("Publishing TEMP 2: %s\n", temp_str);
+        MQTTRPC_Publish(&rpc_conf, "temperature_2", temp_str, os_strlen(temp_str), 2, 1);
+    }
 
     os_free(temp_str);
-    os_free(hum_str);
-
-    // Give it some time so MQTT can do its thing
-    os_timer_disarm(&sleep_timer);
-    os_timer_setfn(&sleep_timer, (os_timer_func_t *)go_to_sleep, (void *)0);
-    os_timer_arm(&sleep_timer, 2000, 0);
 }
 
-const MQTTRPC_Topic_Map topics_map[] = {
-        { .topic = 0 }
-    };
-MQTTRPC_Conf rpc_conf = MQTTRPC_INIT_CONF(
-    .handlers = topics_map, .connected_cb = publish_data);
+
+void ICACHE_FLASH_ATTR
+read_and_publish_data_fn(void* arg) {
+    read_and_publish_data();
+}
+
+
+void ICACHE_FLASH_ATTR
+setup_worker(void* arg) {
+    if(THERMOSTAT_MODE == DEEP_SLEEP_OPERATION) {
+        read_and_publish_data();
+
+        // Give it some time so MQTT can do its thing and then go to sleep
+        os_timer_disarm(&sleep_timer);
+        os_timer_setfn(&sleep_timer, (os_timer_func_t*)go_to_sleep, (void *)0);
+        os_timer_arm(&sleep_timer, 2000, 0);
+    } else if(THERMOSTAT_MODE == NORMAL_OPERATION) {
+        os_timer_disarm(&read_and_pub_timer);
+        os_timer_setfn(&read_and_pub_timer, (os_timer_func_t*)read_and_publish_data_fn, (void*)0);
+        os_timer_arm(&read_and_pub_timer, 3000, 1);
+    }
+}
 
 
 void ICACHE_FLASH_ATTR
 init_mqtt_rpc(uint8_t status) {
     if(status != STATION_GOT_IP) {
         return;
+    }
+
+    INFO("Initialize DS18B20\n");
+    ds18b20_init(&sensors);
+    ds18b20_get_all(&sensors);
+    INFO("Found %d sensors\n", sensors.count);
+
+    if(sensors.count != 2) {
+        INFO("WARNING: You don't seem to have two sensors\n");
     }
 
     INFO("Initialize MQTT client\r\n");
@@ -79,6 +118,8 @@ init_mqtt_rpc(uint8_t status) {
         INFO("Failed to initialize properly. Check MQTT version.\n\r");
         return;
     }
+
+    MQTTRPC_OnConnected(&rpc_conf, setup_worker);
     MQTTRpc_Init(&rpc_conf, &mqttClient);
 }
 
