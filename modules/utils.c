@@ -48,34 +48,43 @@ double atof(const char* s)
 }
 
 
-/**
-Dumb version of ftoa. It woks for now
-**/
-void ftoa(char* buff, float value) {
-    char decimal[5];
-    int precision = 3;
-    int decimal_count = 0;
-    os_sprintf(buff, "%d", (int)value);
 
-    if(((int)value) == value) {
-        return;
-    }
-
-    os_strcat(buff, ".");
-
-    float fractional = value - (int)value;
-    fractional = fractional < 0 ? -1 * fractional : fractional;
-
-    while(fractional < 1 && decimal_count < precision) {
-        fractional = fractional * 10;
-        os_sprintf(decimal, "%s", "0");
-        os_strcat(buff, decimal);
-        decimal_count++;
-    }
-
-    if(decimal_count < precision) {
-        os_sprintf(decimal, "%d", (int)fractional * (precision - decimal_count));
-        os_strcat(buff, decimal);
+void insert_char(char* buff, char character, int position) {
+    int i;
+    char last_char = 0;
+    char set_char = character;
+    for(i = position; i <= os_strlen(buff); i++) {
+        last_char = buff[i];
+        buff[i] = set_char;
+        set_char = last_char;
     }
 }
 
+
+void ftoa(char* buff, float number) {
+    int precision = 3, i;
+    char tmp_buff[20];
+    float beefed_number = number;
+    for(i = 0; i < 3; i++) {
+        beefed_number *= 10;
+    }
+
+    os_sprintf(buff, "%d", (int)beefed_number);
+
+    if(number > 0 && number < 1) {
+        for(i = 0; i < precision - strlen(buff) + 1; i++) {
+            insert_char(buff, '0', 0);
+        }
+        insert_char(buff, '.', 0);
+        insert_char(buff, '0', 0);
+    } else if (number > -1 && number < 0) {
+        for(i = 0; i < precision - strlen(buff) + 1; i++) {
+            insert_char(buff, '0', 1);
+        }
+        insert_char(buff, '.', 1);
+        insert_char(buff, '0', 1);
+    } else {
+        os_sprintf(tmp_buff, "%d", (int)number);
+        insert_char(buff, '.', strlen(buff) - precision);
+    }
+}
