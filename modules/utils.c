@@ -62,7 +62,7 @@ void insert_char(char* buff, char character, int position) {
 /**
 Dumb version of ftoa
 **/
-void ftoa(char* buff, float number) {
+void ftoa_(char* buff, float number) {
     int precision = 3, i;
     float beefed_number = number;
     for(i = 0; i < precision; i++) {
@@ -78,5 +78,32 @@ void ftoa(char* buff, float number) {
 
     if(number > -1 && number < 0) {
         insert_char(buff, '0', 1);
+    }
+}
+
+
+void ftoa(char* buff, double val){
+    uint8_t precision = 3;
+    char buff_t[10];
+    os_sprintf(buff, "%d", (int)val);
+    if(precision > 0) {
+        os_strcat(buff, ".");
+        uint32_t frac;
+        uint32_t mult = 1;
+        uint8_t padding = precision -1;
+        while(precision--)
+            mult *=10;
+
+        if(val >= 0)
+            frac = (val - (int)val) * mult;
+        else
+            frac = ((int)val - val ) * mult;
+        uint32_t frac1 = frac;
+        while( frac1 /= 10 )
+            padding--;
+        while(  padding--)
+            os_strcat(buff, "0");
+        os_sprintf(buff_t, "%d", frac);
+        os_strcat(buff, buff_t);
     }
 }

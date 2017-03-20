@@ -9,6 +9,6 @@
 
 
 double atof(const char* s);
-void ftoa(char* buff, float value);
+void ftoa(char* buff, double value);
 
 #endif
