@@ -48,43 +48,28 @@ double atof(const char* s)
 }
 
 
+void ftoa(char* buff, double val){
+    uint8_t precision = 3;
+    char buff_t[10];
+    os_sprintf(buff, "%d", (int)val);
+    if(precision > 0) {
+        os_strcat(buff, ".");
+        uint32_t frac;
+        uint32_t mult = 1;
+        uint8_t padding = precision -1;
+        while(precision--)
+            mult *=10;
 
-void insert_char(char* buff, char character, int position) {
-    int i;
-    char last_char = 0;
-    char set_char = character;
-    for(i = position; i <= os_strlen(buff); i++) {
-        last_char = buff[i];
-        buff[i] = set_char;
-        set_char = last_char;
-    }
-}
-
-
-void ftoa(char* buff, float number) {
-    int precision = 3, i;
-    char tmp_buff[20];
-    float beefed_number = number;
-    for(i = 0; i < 3; i++) {
-        beefed_number *= 10;
-    }
-
-    os_sprintf(buff, "%d", (int)beefed_number);
-
-    if(number > 0 && number < 1) {
-        for(i = 0; i < precision - strlen(buff) + 1; i++) {
-            insert_char(buff, '0', 0);
-        }
-        insert_char(buff, '.', 0);
-        insert_char(buff, '0', 0);
-    } else if (number > -1 && number < 0) {
-        for(i = 0; i < precision - strlen(buff) + 1; i++) {
-            insert_char(buff, '0', 1);
-        }
-        insert_char(buff, '.', 1);
-        insert_char(buff, '0', 1);
-    } else {
-        os_sprintf(tmp_buff, "%d", (int)number);
-        insert_char(buff, '.', strlen(buff) - precision);
+        if(val >= 0)
+            frac = (val - (int)val) * mult;
+        else
+            frac = ((int)val - val ) * mult;
+        uint32_t frac1 = frac;
+        while( frac1 /= 10 )
+            padding--;
+        while(  padding--)
+            os_strcat(buff, "0");
+        os_sprintf(buff_t, "%d", frac);
+        os_strcat(buff, buff_t);
     }
 }
